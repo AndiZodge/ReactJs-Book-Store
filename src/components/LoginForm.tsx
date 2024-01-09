@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import api from "../apiCall.tsx";
+import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
+// import BASE_URL from "../config.tsx";
+import {jwtDecode} from "jwt-decode";
 const LoginForm = () => {
-
+    const navigate = useNavigate();
+    
     const [formData, setFormData] = useState({
-        userName: '',
+        username: '',
         password: ''
     });
 
@@ -12,25 +17,46 @@ const LoginForm = () => {
         setFormData({...formData, [e.target.name]: value})
     }
 
+    const goToRegisterPage = () => {
+      navigate("/register");
+    }
+
     let handleFormSubmit = async (e) =>{
        e.preventDefault();
-       console.log(formData);
-       let resp = await api.post("/user_login", formData);
-       console.log(resp);
-       
+      try {
+        let resp = await api.post("/user_login", formData);
+        if (resp.status === 200) {
+          try {
+            let token = resp.data.jwt;
+            let og_jwt = token;
+            let decodedToken = jwtDecode(token);
+            localStorage.setItem("jwt", JSON.stringify(decodedToken));
+            localStorage.setItem("og_jwt", og_jwt);
+
+            navigate("/bookstore");
+          } catch (error) {
+            toast.error(error.message);
+            setFormData({ password: "", username: "" });
+          }
+        }
+      } catch (error) {
+        toast.error(error.message);
+        setFormData({ password: "", username: "" });
+      }
     }
 
   return (
     <div className="container">
       <div className="row justify-content-center">
         <div className="col-md-6">
-          <form className="border p-4" onSubmit={handleFormSubmit}>
+          <form className="border p-4 bg-dark" onSubmit={handleFormSubmit}>
             <div className="form-group">
               <label htmlFor="username">Username</label>
               <input
                 type="text"
-                name="userName"
-                // value={formData.userName}
+                name="username"
+                required
+                value={formData.username}
                 onChange={handleFormChanges}
                 className="form-control"
                 id="username"
@@ -42,6 +68,7 @@ const LoginForm = () => {
               <input
                 type="password"
                 name="password"
+                required
                 value={formData.password}
                 onChange={handleFormChanges}
                 className="form-control"
@@ -49,9 +76,20 @@ const LoginForm = () => {
                 placeholder="Enter your password"
               />
             </div>
-            <button type="submit" className="btn btn-primary mt-4">
-              Login
-            </button>
+            <div className="container">
+              <div className="row">
+                <div className="col">
+                  <button type="submit" className="btn btn-primary mt-2">
+                    Login
+                  </button>
+                </div>
+                <div className="col">
+                  <button type="button" className="btn btn-primary mt-2" onClick={goToRegisterPage}>
+                    Create New Account
+                  </button>
+                </div>
+              </div>
+            </div>
           </form>
         </div>
       </div>
